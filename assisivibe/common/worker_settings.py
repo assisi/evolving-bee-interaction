@@ -83,14 +83,14 @@ def load_worker_settings (filename):
     """
     Return a list with the worker settings loaded from a file with the given name.
     """
-    print ("Loading worker settings...")
+    print ("\n* ** Loading worker settings...")
     file_object = open (filename, 'r')
     dictionary = yaml.load (file_object)
     file_object.close ()
     list_worker_settings = [
-        WorkerSettings (dictionary ['worker-%02d' % (index)])
-        for index in xrange (1, dictionary ['number_workers'] + 1)]
-    print ("Loaded worker settings.")
+        WorkerSettings (element)
+        for element in dictionary ['workers']]
+    print ("     Loaded worker settings.")
     return list_worker_settings
 
 def deploy_workers (filename, controller, extra):

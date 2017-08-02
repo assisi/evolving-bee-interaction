@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
+
 import time
 import subprocess #spawn new processes
 import csv
@@ -13,6 +15,8 @@ import assisipy
 import assisivibe.common.image_processing_functions as image_processing_functions
 import assisivibe.common.segments as segments
 import assisivibe.common.util as util
+
+import chromosome
 
 # Column indexes in file population2.csv
 POP_GENERATION       = 0
@@ -84,7 +88,8 @@ class Evaluator:
             fitness_evaluations [index].append (self.iteration_step (chromosome, len (fitness_evaluations [index])))
         result = [self._evaluation_values_reduce (fe) for fe in fitness_evaluations]
         self.save_partial (candidates, result)
-        print ("Generation ", self.generation_number, "  Population fitness: " , result)
+        print ('\n\n* End Of Generation *')
+        print ("\n  Population fitness of generation %d is %s" % (self.generation_number, str (result)))
         self.generation_number += 1
         return result
 
@@ -139,20 +144,21 @@ class Evaluator:
         """
         Experimental step where a candidate chromosome evaluation is done.
         """
+        c2s = chromosome.STRING_2_CLASS [self.config.chromosome_type].to_string (candidate)
         self.episode.increment_evaluation_counter ()
-        print "\n\n* ** New Iteration ** *\nEpisode %d - Evaluation %d" % (self.episode.episode_index, self.episode.current_evaluation_in_episode)
+        print ("\n\n* Fitness Evaluation *\n  Episode %d - Evaluation %d" % (self.episode.episode_index, self.episode.current_evaluation_in_episode))
         picked_arena = self.episode.select_arena ()
         (recording_process, filename_real) = self.start_iteration_video ()
-        print "     Starting vibration model: " + str (candidate) + "..."
+        print ("     Starting vibration model: %s" % (c2s))
         time_start_vibration_pattern = picked_arena.run_vibration_model (self.config, candidate)
-        print "     Vibration model finished!"
+        print ("     Vibration model finished!")
         recording_process.wait ()
-        print "     Iteration video finished!"
+        print ("     Iteration video finished!")
         self.split_iteration_video (filename_real)
         self.compare_images (picked_arena)
         evaluation_score = self.compute_evaluation (picked_arena)
         self.write_evaluation (picked_arena, candidate, evaluation_score, time_start_vibration_pattern)
-        print ("    Evaluation of " + str (candidate) + " is " + str (evaluation_score))
+        print ("\n  Evaluation of %s is %.1f" % (c2s, evaluation_score))
         return evaluation_score
                     
     def start_iteration_video (self):
@@ -161,7 +167,7 @@ class Evaluator:
 
         :return: a tuple with the process that records the iteration the video filename
         """
-        print "\n\n* ** Starting Iteration Video..."
+        print ("\n* ** Starting Iteration Video...")
         filename_real = self.episode.current_path + 'iterationVideo_' + str (self.episode.current_evaluation_in_episode) + '.avi'
         p = util.record_video (filename_real, self.number_analysed_frames, self.config.frames_per_second, self.config.crop_left, self.config.crop_right, self.config.crop_top, self.config.crop_bottom)
         return (p, filename_real)
@@ -173,7 +179,7 @@ class Evaluator:
 
         The images are written in folder tmp relative to 
         """
-        print "\n\n* ** Starting Video Split..."
+        print ("\n* ** Starting Video Split...")
         # bashCommandSplit = "avconv" + \
         #                    " -i " + filename_real + \
         #                    " -r " + str (self.config.frames_per_second) + \
@@ -188,7 +194,7 @@ class Evaluator:
                            " -f image2 tmp/iteration-frame-%4d.jpg"
         p = subprocess.Popen (bashCommandSplit, shell=True, executable='/bin/bash') #to create and save the real images from the video depending on the iteration number
         p.wait ()
-        print ("Finished spliting iteration " + str (self.episode.current_evaluation_in_episode) + " video.")
+        print ("     Finished spliting iteration " + str (self.episode.current_evaluation_in_episode) + " video.")
 
     def compare_images (self, picked_arena):
         """
@@ -198,14 +204,14 @@ class Evaluator:
         The third column has the pixel difference between the current iteration image and the background image in the second CASU.
         The fourth column has the pixel difference between the current iteration image and the previous iteration image in the second CASU.
         """
-        print ("\n\n* ** Comparing Images...")
+        print ("\n* ** Comparing Images...")
         fp = open (self.episode.current_path + "image-processing_" + str (self.episode.current_evaluation_in_episode) + ".csv", 'w')
         f = csv.writer (fp, delimiter = ',', quoting = csv.QUOTE_NONNUMERIC, quotechar = '"')
         f.writerow (picked_arena.image_processing_header ())
         for i in xrange (1, self.number_analysed_frames + 1):
             f.writerow (picked_arena.compare_frames (i))
         fp.close ()
-        print ("Finished comparing images from iteration " + str (self.episode.current_evaluation_in_episode) + " video.")
+        print ("     Finished comparing images from iteration " + str (self.episode.current_evaluation_in_episode) + " video.")
 
     def compute_evaluation (self, picked_arena):
         '''

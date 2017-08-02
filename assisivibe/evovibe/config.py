@@ -17,25 +17,7 @@ import chromosome
 
 class Config (best_config.Config):
     """
-    Configuration setup of an incremental evolutionary algorithm setup.
-
-    Parameters in the configuration file:
-
-    number_bees:  number of bees in each arena.
-
-    number_generations:  number of generations of the evolutionary algorithm
-
-    number_fitness_evaluations_per_episode: maximum number of times a bee group is used to evaluate a chromosome
-
-    evaluation_run_time: duration (in sec) of a single evaluation of a chromosome
-    
-    spreading_waiting_time: time (in sec) for the bees to spread after vibration
-
-    """
-
-    BEE_WORKDAY_LENGTH = 30 * 60
-    """
-    Length of bees workday length in seconds.  After this time has elapsed, bees have to go home to rest and get fed.
+    Configuration setup of a run of the ASSISI PatVibe system.
     """
 
     def __init__ (self, filename = 'config2'):
@@ -192,26 +174,11 @@ class Config (best_config.Config):
         """
         Do a diagnosis of this experimental configuration.
         """
-        sgmnt = segments.Segments (self.evaluation_proceeding)
-        sgmnt.compute_first_last_frames (self.frames_per_second, self.has_blip)
-        total_time = sgmnt.total_number_frames () / self.frames_per_second
-        print ("\n\n* ** Configuration Status ** *")
-        bwl = self.number_fitness_evaluations_per_episode * total_time
-        print ("Bees are going to work %d:%d" % (bwl / 60, bwl % 60), end='')
-        if bwl > Config.BEE_WORKDAY_LENGTH:
-            print (", which is %d%% more than their workday length." % (int ((bwl - Config.BEE_WORKDAY_LENGTH) * 100.0 / Config.BEE_WORKDAY_LENGTH)))
-        else:
-            print (", which is below their workday length.")
-        if self.number_fitness_evaluations_per_episode % self.number_fitness_evaluations_per_chromosome == 0:
-            print ("When a chromosome is being evaluated, no bee change will occur.  Maybe you are assuming that there are changes from one bee set to another.")
-        else:
-            print ("When a chromosome is being evaluated, bee changes WILL occur.  You are assuming that all bee sets are equal.")
-        print ("Configuration setup to use in this experiment:")
+        print ("\n\n* Configuration Setup *")
         print ("----------------------------------------------------------------")
         print (self, end='')
         print ("----------------------------------------------------------------")
-        raw_input ('Press ENTER to continue. ')
-            
+        raw_input ('  Press ENTER to continue. ')
+
 if __name__ == '__main__':
     print (Config ('config'))
-

@@ -36,21 +36,21 @@ class BaseROIPicker (PySide.QtGui.QDialog):
     '''
     The basic region-of-interest picker has a place holder for the image, the button to toggle between the entire image and the mask, the button to accept the data, and the are to enter the properties of the ROI.
     '''
-    def __init__ (self, background_image_path, list_ROI_properties):
+    def __init__ (self, background_image_path):
         '''
         '''
         PySide.QtGui.QDialog.__init__ (self)
         self.background_image_path = background_image_path
         self.image_item = None
         self.spinners = {}
-        self._setup_window (list_ROI_properties)
+        self._setup_window ()
         if background_image_path is not None:
             self._load_background_image ()
         self.block = False
         self.highlighted = False
         self.setMinimumSize (1024, 768)
 
-    def _setup_window (self, list_ROI_properties):
+    def _setup_window (self):
         dialog_layout = PySide.QtGui.QHBoxLayout ()
         self.setLayout (dialog_layout)
         # widget with the background image
@@ -63,13 +63,6 @@ class BaseROIPicker (PySide.QtGui.QDialog):
         dialog_layout.addWidget (splitter2)
         # widget with ROI form
         self._ROI_properties_form = PySide.QtGui.QFormLayout ()
-        # for text in list_ROI_properties:
-        #     spin = PySide.QtGui.QSpinBox ()
-        #     spin.setMinimum (0)
-        #     spin.setMaximum (2048)
-        #     spin.valueChanged.connect (self.roi_widget_update)
-        #     self.spinners [text] = spin
-        #     ROI_properties_form.addRow (text, spin)
         frame = PySide.QtGui.QFrame ()
         frame.setLayout (self._ROI_properties_form)
         splitter2.addWidget (frame)
@@ -151,9 +144,6 @@ class BaseROIPicker (PySide.QtGui.QDialog):
                 key_spinner,
                 default_value,
                 functools.partial (self.update_circle_ROI_4_spinners, key_center_x, key_center_y, key_radius, result))
-            # self.spinners [key_spinner].setValue (default_value)
-            # self.spinners [key_spinner].valueChanged.connect (
-            #     functools.partial (self.update_circle_ROI_4_spinners, key_center_x, key_center_y, key_radius, result))
         return result
 
     def new_rect_ROI (self, default_center_x, default_center_y, default_width, default_height, key_center_x, key_center_y, key_width, key_height):
@@ -172,8 +162,6 @@ class BaseROIPicker (PySide.QtGui.QDialog):
                 key_spinner,
                 default_value,
                 functools.partial (self.update_rect_ROI_4_spinners, key_center_x, key_center_y, key_width, key_height, result))
-            # self.spinners [key_spinner].setValue (default_value)
-            # self.spinners [key_spinner].valueChanged.connect (functools.partial (self.update_rect_ROI_4_spinners, key_center_x, key_center_y, key_width, key_height, result))
         return result
 
     def update_spinners_4_rect_ROI (self, key_center_x, key_center_y, key_width, key_height, roi):
@@ -266,47 +254,22 @@ class CircularArenaROIPicker (BaseROIPicker):
     ROIP_CENTER_Y = 'center y'
     ROIP_RADIUS = 'radius'
     def __init__ (self, background_image_path, center_x = 500, center_y = 500, radius = 125):
-        BaseROIPicker.__init__ (self, background_image_path, [
+        BaseROIPicker.__init__ (self, background_image_path)
+        self.roi = self.new_circle_ROI (
+            center_x, center_y, radius,
             CircularArenaROIPicker.ROIP_CENTER_X,
             CircularArenaROIPicker.ROIP_CENTER_Y,
-            CircularArenaROIPicker.ROIP_RADIUS])
-        self.roi = pyqtgraph.CircleROI ((center_x, center_y), radius)
-        self.im_vb.addItem (self.roi)
-        self.roi.sigRegionChanged.connect (self.roi_gui_update)
-        self._update_spinners (center_x, center_y, radius)
+            CircularArenaROIPicker.ROIP_RADIUS)
 
-    def _add_rois (self):
-        self.im_vb.addItem (self.roi)
-
-    def get_roi_properties (self):
+    def _get_roi_properties (self):
         return (
             self.spinners [CircularArenaROIPicker.ROIP_CENTER_X].value (),
             self.spinners [CircularArenaROIPicker.ROIP_CENTER_Y].value (),
             self.spinners [CircularArenaROIPicker.ROIP_RADIUS].value ()
             )
-    def roi_gui_update (self, roi):
-        if self.block:
-            return
-        self.block = True
-        x, y = roi.pos ()
-        w, h = roi.size ()
-        r = int (w / 2)
-        cx = int (x + r)
-        cy = int (y + r)
-        self._update_spinners (cx, cy, r)
-        self.block = False
-
-    def roi_widget_update (self):
-        if self.block:
-            return
-        self.block = True
-        cx, cy, r = self.get_roi_properties ()
-        self.roi.setPos ((cx - r, cy - r), update = False)
-        self.roi.setSize ((2 * r, 2 * r), update = True)
-        self.block = False
 
     def build_mask (self):
-        cx, cy, r = self.get_roi_properties ()
+        cx, cy, r = self._get_roi_properties ()
         w, h, d = self.imgdata.shape
         for x in xrange (- r, + r):
             for y in xrange ( - r, + r):
@@ -319,7 +282,7 @@ class CircularArenaROIPicker (BaseROIPicker):
         '''
         w, h, d = self.imgdata.shape
         mask_roi = PIL.Image.new ('L', (w, h), 'black')
-        cx, cy, r = self.get_roi_properties ()
+        cx, cy, r = self._get_roi_properties ()
         draw = PIL.ImageDraw.Draw (mask_roi)
         # we have to flip the image horizontally
         draw.ellipse (((cx - r, h - (cy + r) - 1), (cx + r, h - (cy - r) - 1)), fill = 'white')
@@ -330,7 +293,7 @@ class CircularArenaROIPicker (BaseROIPicker):
         Not working properly...
         '''
         w, h, d = self.imgdata.shape
-        cx, cy, r = self.get_roi_properties ()
+        cx, cy, r = self._get_roi_properties ()
         base_image = PIL.Image.open (self.background_image_path).convert (mode = 'RGBA')
         roi_image = PIL.Image.new ('RGBA', base_image.size, (255, 255, 255, 0))
         draw = PIL.ImageDraw.Draw (roi_image)
@@ -339,14 +302,9 @@ class CircularArenaROIPicker (BaseROIPicker):
         out = PIL.Image.alpha_composite (base_image, roi_image)
         out.save (os.path.join (images_folder, 'Region-of-Interests.jpg'))
 
-    def _update_spinners (self, center_x, center_y, radius):
-        self.spinners [CircularArenaROIPicker.ROIP_CENTER_X].setValue (center_x)
-        self.spinners [CircularArenaROIPicker.ROIP_CENTER_Y].setValue (center_y)
-        self.spinners [CircularArenaROIPicker.ROIP_RADIUS].setValue (radius)
-
     def write_properties (self, images_folder):
         w, h, d = self.imgdata.shape
-        cx, cy, r = self.get_roi_properties ()
+        cx, cy, r = self._get_roi_properties ()
         data = {
             'arena_center_x' : cx,
             'arena_center_y' : h - cy - 1,
@@ -368,22 +326,19 @@ class TwoCircularArenasROIPicker (BaseROIPicker):
     ROIP_2_RADIUS = 'passive ROI radius'
 
     def __init__ (self, background_image_path, center_1_x = 150, center_1_y = 300, center_2_x = 300, center_2_y = 200, radius = 125):
-        BaseROIPicker.__init__ (self, background_image_path, [
+        BaseROIPicker.__init__ (self, background_image_path)
+        self.roi1 = self.new_circle_ROI (
+            center_1_x, center_1_y, radius,
             TwoCircularArenasROIPicker.ROIP_1_CENTER_X,
             TwoCircularArenasROIPicker.ROIP_1_CENTER_Y,
-            TwoCircularArenasROIPicker.ROIP_1_RADIUS,
+            TwoCircularArenasROIPicker.ROIP_1_RADIUS)
+        self.roi2 = self.new_circle_ROI (
+            center_2_x, center_2_y, radius,
             TwoCircularArenasROIPicker.ROIP_2_CENTER_X,
             TwoCircularArenasROIPicker.ROIP_2_CENTER_Y,
-            TwoCircularArenasROIPicker.ROIP_2_RADIUS])
-        self.roi1 = pyqtgraph.CircleROI ((center_1_x, center_1_y), radius)
-        self.im_vb.addItem (self.roi1)
-        self.roi1.sigRegionChanged.connect (self.roi_1_gui_update)
-        self.roi2 = pyqtgraph.CircleROI ((center_2_x, center_2_y), radius)
-        self.im_vb.addItem (self.roi2)
-        self.roi2.sigRegionChanged.connect (self.roi_2_gui_update)
-        self._update_spinners (center_1_x, center_1_y, radius, center_2_x, center_2_y, radius)
+            TwoCircularArenasROIPicker.ROIP_2_RADIUS)
 
-    def get_roi_properties (self):
+    def _get_roi_properties (self):
         return (
             self.spinners [TwoCircularArenasROIPicker.ROIP_1_CENTER_X].value (),
             self.spinners [TwoCircularArenasROIPicker.ROIP_1_CENTER_Y].value (),
@@ -393,47 +348,8 @@ class TwoCircularArenasROIPicker (BaseROIPicker):
             self.spinners [TwoCircularArenasROIPicker.ROIP_2_RADIUS].value ()
             )
 
-    def roi_1_gui_update (self, roi):
-        if self.block:
-            return
-        self.block = True
-        x, y = roi.pos ()
-        w, h = roi.size ()
-        r1 = int (w / 2)
-        cx1 = int (x + r1)
-        cy1 = int (y + r1)
-        self.spinners [TwoCircularArenasROIPicker.ROIP_1_CENTER_X].setValue (cx1)
-        self.spinners [TwoCircularArenasROIPicker.ROIP_1_CENTER_Y].setValue (cy1)
-        self.spinners [TwoCircularArenasROIPicker.ROIP_1_RADIUS].setValue (r1)
-        self.block = False
-
-    def roi_2_gui_update (self, roi):
-        if self.block:
-            return
-        self.block = True
-        x, y = roi.pos ()
-        w, h = roi.size ()
-        r2 = int (w / 2)
-        cx2 = int (x + r2)
-        cy2 = int (y + r2)
-        self.spinners [TwoCircularArenasROIPicker.ROIP_2_CENTER_X].setValue (cx2)
-        self.spinners [TwoCircularArenasROIPicker.ROIP_2_CENTER_Y].setValue (cy2)
-        self.spinners [TwoCircularArenasROIPicker.ROIP_2_RADIUS].setValue (r2)
-        self.block = False
-
-    def roi_widget_update (self):
-        if self.block:
-            return
-        self.block = True
-        cx1, cy1, r1, cx2, cy2, r2 = self.get_roi_properties ()
-        self.roi1.setPos ((cx1 - r1, cy1 - r1), update = False)
-        self.roi1.setSize ((2 * r1, 2 * r1), update = True)
-        self.roi2.setPos ((cx2 - r2, cy2 - r2), update = False)
-        self.roi2.setSize ((2 * r2, 2 * r2), update = True)
-        self.block = False
-
     def build_mask (self):
-        cx1, cy1, r1, cx2, cy2, r2 = self.get_roi_properties ()
+        cx1, cy1, r1, cx2, cy2, r2 = self._get_roi_properties ()
         w, h, d = self.imgdata.shape
         for x in xrange (- r1, + r1):
             for y in xrange ( - r1, + r1):
@@ -449,7 +365,7 @@ class TwoCircularArenasROIPicker (BaseROIPicker):
         Create the image masks.
         '''
         w, h, d = self.imgdata.shape
-        cx1, cy1, r1, cx2, cy2, r2 = self.get_roi_properties ()
+        cx1, cy1, r1, cx2, cy2, r2 = self._get_roi_properties ()
         for index, (cx, cy, r) in enumerate ([(cx1, cy1, r1), (cx2, cy2, r2)]):
             mask_roi = PIL.Image.new ('L', (w, h), 'black')
             draw = PIL.ImageDraw.Draw (mask_roi)
@@ -465,24 +381,16 @@ class TwoCircularArenasROIPicker (BaseROIPicker):
         base_image = PIL.Image.open (self.background_image_path).convert (mode = 'RGBA')
         roi_image = PIL.Image.new ('RGBA', base_image.size, (255, 255, 255, 0))
         draw = PIL.ImageDraw.Draw (roi_image)
-        cx1, cy1, r1, cx2, cy2, r2 = self.get_roi_properties ()
+        cx1, cy1, r1, cx2, cy2, r2 = self._get_roi_properties ()
         for (fr, fg, fb, cx, cy, r) in [(255, 0, 0, cx1, cy1, r1), (0, 0, 255, cx2, cy2, r2)]:
             # we have to flip the image horizontally
             draw.ellipse (((cx - r, h - (cy + r) - 1), (cx + r, h - (cy - r) - 1)), fill = (fr,fg,fb,127))
         out = PIL.Image.alpha_composite (base_image, roi_image)
         out.save (os.path.join (images_folder, 'Region-of-Interests.jpg'))
 
-    def _update_spinners (self, center_1_x, center_1_y, radius_1, center_2_x, center_2_y, radius_2):
-        self.spinners [TwoCircularArenasROIPicker.ROIP_1_CENTER_X].setValue (center_1_x)
-        self.spinners [TwoCircularArenasROIPicker.ROIP_1_CENTER_Y].setValue (center_1_y)
-        self.spinners [TwoCircularArenasROIPicker.ROIP_1_RADIUS].setValue (radius_1)
-        self.spinners [TwoCircularArenasROIPicker.ROIP_2_CENTER_X].setValue (center_2_x)
-        self.spinners [TwoCircularArenasROIPicker.ROIP_2_CENTER_Y].setValue (center_2_y)
-        self.spinners [TwoCircularArenasROIPicker.ROIP_2_RADIUS].setValue (radius_2)
-
     def write_properties (self, images_folder):
         w, h, d = self.imgdata.shape
-        cx1, cy1, r1, cx2, cy2, r2 = self.get_roi_properties ()
+        cx1, cy1, r1, cx2, cy2, r2 = self._get_roi_properties ()
         data = {
             'arena_active_center_x' : cx1,
             'arena_active_center_y' : h - cy1 - 1,
@@ -527,7 +435,7 @@ class Corridor2Start2GoalROIPicker (BaseROIPicker):
                       goal_2_center_x = 350, goal_2_center_y = 50,
                       goal_radius = 50
                       ):
-        BaseROIPicker.__init__ (self, background_image_path, [])
+        BaseROIPicker.__init__ (self, background_image_path)
         self.roi_start_1 = self.new_rect_ROI (
             start_1_center_x, start_1_center_y, start_width, start_height,
             Corridor2Start2GoalROIPicker.ROIP_START_1_CENTER_X,
@@ -552,14 +460,14 @@ class Corridor2Start2GoalROIPicker (BaseROIPicker):
             Corridor2Start2GoalROIPicker.ROIP_GOAL_2_RADIUS)
 
     def build_mask (self):
-        s1x, s1y, s1w, s1h, s2x, s2y, s2w, s2h, g1x, g1y, g1r, g2x, g2y, g2r = self.get_roi_properties ()
+        s1x, s1y, s1w, s1h, s2x, s2y, s2w, s2h, g1x, g1y, g1r, g2x, g2y, g2r = self._get_roi_properties ()
         w, h, d = self.imgdata.shape
         self.mask_rect (s1x, s1y, s1w, s1h)
         self.mask_rect (s2x, s2y, s2w, s2h)
         self.mask_circle (g1x, g1y, g1r)
         self.mask_circle (g2x, g2y, g2r)
 
-    def get_roi_properties (self):
+    def _get_roi_properties (self):
         return (
             self.spinners [Corridor2Start2GoalROIPicker.ROIP_START_1_CENTER_X].value (),
             self.spinners [Corridor2Start2GoalROIPicker.ROIP_START_1_CENTER_Y].value (),
@@ -581,7 +489,7 @@ class Corridor2Start2GoalROIPicker (BaseROIPicker):
         '''
         Create the images masks in the given folder.
         '''
-        s1x, s1y, s1w, s1h, s2x, s2y, s2w, s2h, g1x, g1y, g1r, g2x, g2y, g2r = self.get_roi_properties ()
+        s1x, s1y, s1w, s1h, s2x, s2y, s2w, s2h, g1x, g1y, g1r, g2x, g2y, g2r = self._get_roi_properties ()
         for index, (cx, cy, w, h) in zip (Corridor2Start2GoalROIPicker.get_indexes_start_masks (), [(s1x, s1y, s1w, s1h), (s2x, s2y, s2w, s2h)]):
             self.save_rect_mask_image (cx, cy, w, h, os.path.join (images_folder, 'Mask-%d.jpg' % (index)))
         for index, (cx, cy, r) in zip (Corridor2Start2GoalROIPicker.get_indexes_goal_masks (), [(g1x, g1y, g1r), (g2x, g2y, g2r)]):
@@ -596,7 +504,7 @@ class Corridor2Start2GoalROIPicker (BaseROIPicker):
         return [2, 3]
 
     def create_region_of_interests_image (self, images_folder):
-        s1x, s1y, s1w, s1h, s2x, s2y, s2w, s2h, g1x, g1y, g1r, g2x, g2y, g2r = self.get_roi_properties ()
+        s1x, s1y, s1w, s1h, s2x, s2y, s2w, s2h, g1x, g1y, g1r, g2x, g2y, g2r = self._get_roi_properties ()
         w, h, d = self.imgdata.shape
         base_image = PIL.Image.open (self.background_image_path).convert (mode = 'RGBA')
         roi_image = PIL.Image.new ('RGBA', base_image.size, (255, 255, 255, 0))
@@ -610,7 +518,7 @@ class Corridor2Start2GoalROIPicker (BaseROIPicker):
 
     def write_properties (self, images_folder):
         w, h, d = self.imgdata.shape
-        s1x, s1y, s1w, s1h, s2x, s2y, s2w, s2h, g1x, g1y, g1r, g2x, g2y, g2r = self.get_roi_properties ()
+        s1x, s1y, s1w, s1h, s2x, s2y, s2w, s2h, g1x, g1y, g1r, g2x, g2y, g2r = self._get_roi_properties ()
         data = {
             'start_1_center_x' : s1x,
             'start_1_center_y' : h - s2y - 1,
@@ -659,6 +567,6 @@ if __name__ == "__main__":
     window = STRING_2_CLASS [args.type] (args.background)
     window.show ()
     app.exec_ ()
-    print ('Region-of-interest properties: ', window.get_roi_properties ())
+    print ('Region-of-interest properties: ', window._get_roi_properties ())
     window.create_mask_images ('.')
     window.create_region_of_interests_image ('.')

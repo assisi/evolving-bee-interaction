@@ -37,7 +37,6 @@ class Episode:
         self.episode_index = episode_index
         self.app = PySide.QtGui.QApplication ([])
 
-
     def initialise (self):
         """
         In the initialisation phase of an episode we:
@@ -48,30 +47,31 @@ class Episode:
 
         * ask the user to put bees in the arena(s);
         """
+        print ("\n\n* New Episode *")
         self.current_path = "%sepisodes/%03d/" % (self.experiment_folder, self.episode_index)
-        try:
-            os.makedirs (self.current_path)
-        except OSError:
-            pass
-        print ('\n\nPut new wax floor and arena(s).')
-        print ('Turn off the lab light and close the lab door.')
-        raw_input ('Press ENTER when ready ')
-        print ('Waiting %d seconds for camera to adjust...' % (self.config.camera_autofocus_time))
+#        try:
+        os.makedirs (self.current_path)
+ #       except OSError:
+  #          pass
+        print ('  Put new wax floor and arena(s).')
+        print ('  Turn off the lab light and close the lab door.')
+        raw_input ('  Press ENTER when ready ')
+        print ('  Waiting %d seconds for camera to adjust...' % (self.config.camera_autofocus_time))
         time.sleep (self.config.camera_autofocus_time)
         self.make_background_image ()
         self.ask_arenas ()
-        if len (self.arenas) == 1:
-            print ('\nPlace %d bees in the arena.' % self.config.number_bees)
+        if len (self.arenas) == 1 and self.arenas [0].number_ROIs == 1:
+            print ('\n  Place %d bees in the arena.' % self.config.number_bees)
         else:
-            print ('\nPlace %d bees in each arena.' % self.config.number_bees)
-        print ('Turn off the lab light and close the lab door.')
-        raw_input ('Press ENTER when ready ')
+            print ('\n  Place %d bees in each arena.' % self.config.number_bees)
+        print ('  Turn off the lab light and close the lab door.')
+        raw_input ('  Press ENTER when ready ')
         if self.config.bee_familiarisation_time > 0:
-            print ("I'm going to wait %ds for the bees to relax." % (self.config.bee_familiarisation_time))
+            print ("  I'm going to wait %ds for the bees to relax." % (self.config.bee_familiarisation_time))
             time.sleep (self.config.bee_familiarisation_time)
-            print ("Bees should be ready to go!\n")
+            print ("  Bees should be ready to go!\n")
         else:
-            print ('Waiting %d seconds for camera to adjust...' % (self.config.camera_autofocus_time))
+            print ('  Waiting %d seconds for camera to adjust...' % (self.config.camera_autofocus_time))
             time.sleep (self.config.camera_autofocus_time)
 
     def increment_evaluation_counter (self):
@@ -79,7 +79,6 @@ class Episode:
         Increment the evaluation counter.  If we have reached the end of an episode, we finish it and start a new episode.
         """
         if (self.current_evaluation_in_episode == self.config.number_fitness_evaluations_per_episode):
-            print ("\n\n* ** New Episode ** *")
             self.finish ()
             self.episode_index += 1
             self.initialise ()
@@ -97,9 +96,9 @@ class Episode:
         and everytime we change bees.  Whenever we change bees, we may
         disturb the arena.  The bee aggregation is sensitive to changes between the background image and evaluation images.
         """
-        print ("\n\n* ** Creating background image...")
+        print ("\n* ** Creating background image...")
         filename = self.current_path + 'Background.avi'
-        p = util.record_video (filename, 1, 1, self.config.crop_left, self.config.crop_right, self.config.crop_top, self.config.crop_bottom, debug = True)
+        p = util.record_video (filename, 1, 1, self.config.crop_left, self.config.crop_right, self.config.crop_top, self.config.crop_bottom)
         p.wait ()
         bashCommandSplit = "ffmpeg" + \
             " -i " + filename + \
@@ -108,12 +107,13 @@ class Episode:
             " -f image2 " + self.current_path + "Background.jpg" #definition to extract the single image for background from the video
         p = subprocess.Popen (bashCommandSplit, shell = True, executable = '/bin/bash') #run the script of the extracting
         p.wait ()
-        print ("background image is ready")
+        print ("     background image is ready")
 
     def ask_arenas (self):
         """
         Ask the user how many arenas are going to be used and their characteristics.
         """
+        print ('\n* ** Arena(s) Setup **')
         go = True
         self.arenas = []
         index = 1
@@ -141,27 +141,28 @@ class Episode:
         Check the status of the arenas and select an arena using a roulette wheel approach.
         Returns the selected arena.
         """
+        print ('\n* ** Checking Arena Temperature...')
         ok = False
         while not ok:
             status = []
             total_sum = 0
-            for an_arena in self.arenas:
+            for index, an_arena in enumerate (self.arenas):
                 (value, temps) = an_arena.status ()
                 total_sum += value
                 status.append (value)
-                print ("Temperature status: %s." % (str (temps)))
+                print ("     Arena #%d temperature status: %s." % (index + 1, str (temps)))
             if total_sum == 0:
-                print ("All arenas have a temperature above the minimum threshold!")
-                raw_input ("Press ENTER to try again. ")
+                print ("     All arenas have a temperature above the minimum threshold!")
+                raw_input ("     Press ENTER to try again. ")
             else:
                 ok = True
-        x = total_sum * random.random ()
         picked = 0
-        print (x, "/", total_sum, status)
-        while x >= status [picked]:
-            x -= status [picked]
-            picked += 1
-        print ("Picked arena #%d." % (picked + 1))
+        if len (self.arenas) > 1:
+            x = total_sum * random.random ()
+            while x >= status [picked]:
+                x -= status [picked]
+                picked += 1
+            print ("     Picked arena #%d." % (picked + 1))
         return self.arenas [picked]
         
     def finish (self, end_evolutionary_algorithm = False):
@@ -171,10 +172,11 @@ class Episode:
         * tell the user to remove the bees from the arena;
 
         """
-        print ("Remove the bees from the arena(s)!")
+        print ('\n\n* Episode End *')
+        print ("  Remove the bees from the arena(s)!")
         if end_evolutionary_algorithm:
-            print ('The program is going to finish!')
-        raw_input ("When done, press ENTER to continue. ")
+            print ('  The program is going to finish!')
+        raw_input ("  When done, press ENTER to continue. ")
 
 if __name__ == '__main__':
     import worker_settings

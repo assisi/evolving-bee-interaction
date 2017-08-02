@@ -110,7 +110,13 @@ class SinglePulse1sGenesFrequencyPause:
     def max_period ():
         return max (MIN_PERIOD, min (SinglePulse1sGenesFrequencyPause.PULSE_PERIOD - MIN_PERIOD, MAX_PERIOD))
 
-class SinglePulse1sGenesPulse (AbstractChromosome):
+    @staticmethod
+    def to_string (chromosome):
+        frequency        = chromosome [0]
+        pause_period     = chromosome [1]
+        return '%dHz P%dms' % (frequency, pause_period)
+
+class SinglePulse1sGenesPulse:
     """
     This chromosome contains the gene that control a vibration pulse with 1
     second of duration.  The genes are the frequency, pause period and
@@ -127,7 +133,7 @@ class SinglePulse1sGenesPulse (AbstractChromosome):
         pause_period     = chromosome [1]
         vibration_period = SinglePulse1sGenesPulse.PULSE_PERIOD - chromosome [1]
         amplitude        = chromosome [2]
-        print ('       Playing SinglePulse1sGenesPulse %dHz V%dms P%dms' % (frequency, vibration_period, pause_period))
+        print ('       Playing SinglePulse1sGenesPulse %dHz %d%% V%dms P%dms' % (frequency, amplitude, vibration_period, pause_period))
         vibe_periods = [vibration_period,  pause_period]
         vibe_freqs   = [       frequency,             1]
         vibe_amps    = [       amplitude,             0]
@@ -173,6 +179,13 @@ class SinglePulse1sGenesPulse (AbstractChromosome):
     def max_period ():
         return max (MIN_PERIOD, min (SinglePulse1sGenesPulse.PULSE_PERIOD - MIN_PERIOD, MAX_PERIOD))
 
+    @staticmethod
+    def to_string (chromosome):
+        frequency        = chromosome [0]
+        pause_period     = chromosome [1]
+        amplitude        = chromosome [2]
+        return '%dHz %d%% P%dms' % (frequency, amplitude, pause_period)
+
 class Method:
     def __init__ (self, class_name):
         self.run_vibration_model = class_name.run_vibration_model
@@ -186,6 +199,11 @@ class Method:
 CHROMOSOME_METHODS = {
     'SinglePulse1sGenesFrequencyPause' : Method (SinglePulse1sGenesFrequencyPause) ,
     'SinglePulse1sGenesPulse' : Method (SinglePulse1sGenesPulse) ,
+    }
+
+STRING_2_CLASS = {
+    'SinglePulse1sGenesFrequencyPause' : SinglePulse1sGenesFrequencyPause ,
+    'SinglePulse1sGenesPulse' : SinglePulse1sGenesPulse ,
     }
 
 class Gene:

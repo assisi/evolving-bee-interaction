@@ -1,8 +1,62 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# This module contains the image processing functions that are used by the evolutionary algorithm, and by the tools that analyse the behaviour of bees.
+# This module contains the image processing functions that are used by the
+# evolutionary algorithm, and by the tools that analyse the behaviour of
+# bees.
+#
+# This module contains the functions that compare images in order to
+# compute the pixel count difference between them.
 
+import PIL.Image
+import PIL.ImageChops
+
+def number_different_pixels_ROI (ROI_filename, frame1_filename, frame2_filename, same_colour_threshold):
+    """
+    Compare two frames to see how many pixels are different in a specific region of interest.
+    """
+    def open_image (filename_filename):
+        result = PIL.Image.open (filename_filename)
+        if result.mode != 'L':
+            result = result.convert (mode = 'L')
+        return result
+    img_ROI = open_image (ROI_filename)
+    img_frame1 = open_image (frame1_filename)
+    img_frame2 = open_image (frame2_filename)
+    img_ROI1 = PIL.ImageChops.multiply (img_ROI, img_frame1)
+    img_ROI2 = PIL.ImageChops.multiply (img_ROI, img_frame2)
+    img_diff = PIL.ImageChops.difference (img_ROI1, img_ROI2)
+    histogram = img_diff.histogram ()
+    return sum (histogram [same_colour_threshold:256])
+
+def compare_frames (ith_frame, delta_frame, number_ROIs, frame_template, ROI_template, background_filename, same_colour_threshold):
+    """
+    Compare the background frame with the ith frame from an iteration video
+    and compare frames that are delta_frame apart.  Returns a list with
+    number of pixels that are different for each region-of-interest,
+    meaning the pixel value difference is higher than threshold.  The
+    contents of the list are:
+
+    [
+      pixel count difference background ith frame region-of-interest 1,
+      pixel count difference frames delta_frame apart region-of-interest 1,
+      pixel count difference background ith frame region-of-interest 2,
+      pixel count difference frames delta_frame apart region-of-interest 2,
+      ...
+    ]
+    """
+    frame1_filename = frame_template % (ith_frame)
+    return [
+        number_different_pixels_ROI (ROI_filename, frame1_filename, frame2_filename, same_colour_threshold)
+        if not frame2_filename is None
+        else -1
+        for ROI_filename in [ROI_template % (index_ROI) for index_ROI in xrange (number_ROIs)]
+        for frame2_filename in [
+                background_filename,
+                frame_template % (ith_frame - delta_frame)
+                if ith_frame > delta_frame
+                else None]
+        ]
 
 def bee_pixels_IF_bees_AND_no_movement_ONLY_IN_active (config, active_roi_index, row):
     """
