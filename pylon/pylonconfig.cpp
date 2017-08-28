@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
 		std::cout << "Using device " << camera.GetDeviceInfo ().GetModelName () << std::endl;
 		camera.Open();
 		camera.ExposureTimeRaw = Adjust (35000, camera.ExposureTimeRaw.GetMin (), camera.ExposureTimeRaw.GetMax (), camera.ExposureTimeRaw.GetInc ());
-		camera.BalanceWhiteAuto = BalanceWhiteAuto_Off;
+		//camera.BalanceWhiteAuto = BalanceWhiteAuto_Off;
 		camera.AcquisitionFrameRateAbs = frame_rate;
 		camera.Width = AOI_width;
 		camera.Height = AOI_height;

@@ -1,7 +1,10 @@
 PYLON_ROOT ?= /opt/pylon5
 CPPFLAGS   += $(shell $(PYLON_ROOT)/bin/pylon-config --cflags)
+CFLAGS     += $(shell $(PYLON_ROOT)/bin/pylon-config --cflags)
 LDFLAGS    += $(shell $(PYLON_ROOT)/bin/pylon-config --libs-rpath)
 LDLIBS     += $(shell $(PYLON_ROOT)/bin/pylon-config --libs)
+
+CC = g++
 
 all:
 
