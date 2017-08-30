@@ -17,8 +17,13 @@ from skimage.morphology.selem import diamond
 from skimage.util.dtype import img_as_float
 from skimage.feature import blob_doh
 
+def preprocess_frame():
+    pass
 
-def evaluate_fatigue(frame_folder, background_folder, noise_threshold_upper=0.6, noise_threshold_lower=0.2):
+def detect_blobs():
+    pass
+
+def segment(frame_folder, background_folder, noise_threshold_upper=0.6, noise_threshold_lower=0.2):
     prev = None
     first_run = True
 
@@ -26,8 +31,6 @@ def evaluate_fatigue(frame_folder, background_folder, noise_threshold_upper=0.6,
 
     bg_frame = os.listdir(background_folder)[0]
     background = img_as_float(rgb2grey(io.imread(os.path.join(background_folder,bg_frame))))
-
-
 
     for frame in os.listdir(frame_folder):
 
@@ -50,6 +53,9 @@ def evaluate_fatigue(frame_folder, background_folder, noise_threshold_upper=0.6,
 
         # Blob detection
         blobs_doh = blob_dog(clean*255, min_sigma=10, max_sigma=30, threshold=0.1, overlap=0.99)
+
+        std = np.std(blobs_doh, axis=0)
+        dispersion = std[0]*std[1]
 
         if first_run:
             fig, (ax0, ax1, ax2) = plt.subplots(nrows=1,
@@ -83,6 +89,8 @@ def evaluate_fatigue(frame_folder, background_folder, noise_threshold_upper=0.6,
             plt.show()
 
             first_run = False
+
+    return dispersion
 
 def setup_graphing(n_frames):
     fig, (ax_vid, ax_plot) = plt.subplots(nrows=2,
@@ -119,4 +127,4 @@ if __name__ == '__main__':
                         help='Background folder')
 
     args = parser.parse_args()
-    evaluate_fatigue(args.folder, args.background)
+    segment(args.folder, args.background)
