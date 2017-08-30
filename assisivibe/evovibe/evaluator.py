@@ -10,6 +10,17 @@ import numpy
 import random
 import sys
 
+
+from scipy.ndimage import gaussian_filter
+from skimage import io
+from skimage.color.colorconv import rgb2grey
+from skimage.feature.blob import blob_dog
+from skimage.morphology import reconstruction, erosion, dilation
+from skimage.morphology.grey import opening
+from skimage.morphology.selem import diamond
+from skimage.util.dtype import img_as_float
+from skimage.feature import blob_doh
+
 import assisipy
 
 import assisivibe.common.image_processing_functions as image_processing_functions
@@ -147,6 +158,12 @@ class Evaluator:
         c2s = chromosome.STRING_2_CLASS [self.config.chromosome_type].to_string (candidate)
         self.episode.increment_evaluation_counter ()
         print ("\n\n* Fitness Evaluation *\n  Episode %d - Evaluation %d" % (self.episode.episode_index, self.episode.current_evaluation_in_episode))
+
+        index = 1
+        while self.segment () < self.config.dispersion_threshold:
+            print ('At attempt #%d bees are not dispersed' % (index))
+            index += 1
+        
         picked_arena = self.episode.select_arena ()
         (recording_process, filename_real) = self.start_iteration_video ()
         print ("     Starting vibration model: %s" % (c2s))
@@ -253,3 +270,84 @@ class Evaluator:
                 time_start_vibration_pattern,
                 evaluation_score] + candidate)
             fp.close ()
+
+
+    def segment(self, noise_threshold_upper=0.6, noise_threshold_lower=0.2):
+
+        filename = self.episode.current_path + "segment.avi"
+        p = util.record_video (filename, self.config.fatigue_video_number_frames, self.config.fatigue_video_frames_per_second, self.config.crop_left, self.config.crop_right, self.config.crop_top, self.config.crop_bottom)
+        p.wait ()
+        p = util.split_video (filename, self.config.fatigue_video_number_frames, self.config.fatigue_video_frames_per_second, 'tmp/segment_%4d.png')
+        p.wait ()
+
+        background_folder = self.episode.current_path + 'Background.png'
+        prev = None
+        first_run = False
+
+        movement = []
+
+        bg_frame = os.listdir(background_folder)[0]
+        background = img_as_float(rgb2grey(io.imread(os.path.join(background_folder,bg_frame))))
+
+        for ith_frame in xrange (1, self.config.fatigue_video_number_frames + 1):
+            frame = 'tmp/segment_%04d.png' % (ith_frame)
+
+            # Convert to float: Important for subtraction later which won't work with uint8
+            foreground = img_as_float(rgb2grey(io.imread(frame)))
+            image = np.abs(foreground - background)
+
+            #image = gaussian_filter(image, 1)
+
+            seed = np.copy(image)
+            seed[1:-1, 1:-1] = image.min()
+            mask = image
+
+            dilated = reconstruction(seed, mask, method='dilation')
+
+            clean = image - dilated
+            clean[clean < noise_threshold_lower] = 0.0
+            clean[clean > noise_threshold_upper] = 0.0
+            clean = opening(clean)
+
+            # Blob detection
+            blobs_doh = blob_dog(clean*255, min_sigma=10, max_sigma=30, threshold=0.1, overlap=0.99)
+            blobs_doh /= np.array (self.config.image_width, self.config.image_height, 1)
+
+            std = np.std(blobs_doh, axis=0)
+            dispersion = std[0]*std[1]
+
+            if first_run:
+                fig, (ax0, ax1, ax2) = plt.subplots(nrows=1,
+                                                    ncols=3,
+                                                    figsize=(15, 8),
+                                                    sharex=True,
+                                                    sharey=True)
+
+                ax0.imshow(image, cmap='gray')
+                ax0.set_title('difference image')
+                ax0.axis('off')
+                ax0.set_adjustable('box-forced')
+
+                ax1.imshow(clean, vmin=image.min(), vmax=image.max(), cmap='gray')
+                ax1.set_title('cleaned')
+                ax1.axis('off')
+                ax1.set_adjustable('box-forced')
+
+                ax2.imshow(foreground, cmap='gray')
+                print('Min: %f, Max: %f' %(np.min(clean), np.max(clean)))
+                ax2.set_title('blob')
+                ax2.axis('off')
+                ax2.set_adjustable('box-forced')
+                print(blobs_doh)
+                for blob in blobs_doh:
+                    y, x, r = blob
+                    c = plt.Circle((x, y), r, color='c', linewidth=2, fill=False)
+                    ax2.add_patch(c)
+
+                fig.tight_layout()
+                plt.show()
+
+                first_run = False
+
+        print ('dispersion is ', dispersion)
+        return dispersion

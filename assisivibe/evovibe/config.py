@@ -191,6 +191,11 @@ class Config (best_config.Config):
                 min_value = 0,
                 max_value = 256,
                 path_in_dictionary = ['fatigue']),
+            Parameter (
+                'dispersion_threshold',
+                'Bee dispersion threshold',
+                parse_data = float,
+                path_in_dictionary = ['dispersion']),
             ])
         if os.path.isfile (filename):
             self.load_from_yaml_file (filename)
