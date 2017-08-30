@@ -47,14 +47,16 @@ int main(int argc, char* argv[])
 		camera.Open();
 		camera.ExposureTimeRaw = Adjust (35000, camera.ExposureTimeRaw.GetMin (), camera.ExposureTimeRaw.GetMax (), camera.ExposureTimeRaw.GetInc ());
 		//camera.BalanceWhiteAuto = BalanceWhiteAuto_Off;
+		//std::cout << "Here\n";
 		camera.AcquisitionFrameRateAbs = frame_rate;
 		camera.Width = AOI_width;
 		camera.Height = AOI_height;
 		camera.OffsetX = AOI_x_offset;
 		camera.OffsetY = AOI_y_offset;
 		// Enable time stamp chunks.
-		camera.ChunkSelector.SetValue (ChunkSelector_Timestamp);
-		camera.ChunkEnable.SetValue (true);
+		//camera.ChunkSelector.SetValue (ChunkSelector_Timestamp);
+		//camera.ChunkEnable.SetValue (true);
+		//std::cout << "Here\n";
 		std::cout << "Saving camera's node map to file..." << std::endl;
 		// Save the content of the camera's node map into the file.
 		CFeaturePersistence::Save (filename.c_str (), &camera.GetNodeMap() );
