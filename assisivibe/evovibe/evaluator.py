@@ -7,6 +7,7 @@ import time
 import subprocess #spawn new processes
 import csv
 import numpy
+import os
 import random
 import sys
 
@@ -160,6 +161,7 @@ class Evaluator:
         print ("\n\n* Fitness Evaluation *\n  Episode %d - Evaluation %d" % (self.episode.episode_index, self.episode.current_evaluation_in_episode))
 
         index = 1
+        print ('Checking if bees are dispersed...')
         while self.segment () < self.config.dispersion_threshold:
             print ('At attempt #%d bees are not dispersed' % (index))
             index += 1
@@ -286,8 +288,7 @@ class Evaluator:
 
         movement = []
 
-        bg_frame = os.listdir(background_folder)[0]
-        background = img_as_float(rgb2grey(io.imread(os.path.join(background_folder,bg_frame))))
+        background = img_as_float(rgb2grey(io.imread(background_folder)))
 
         for ith_frame in xrange (1, self.config.fatigue_video_number_frames + 1):
             frame = 'tmp/segment_%04d.png' % (ith_frame)
