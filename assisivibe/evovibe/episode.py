@@ -16,6 +16,10 @@ import PySide.QtGui
 import random
 import time
 
+from PIL import Image
+from PIL.ImageChops import difference
+from PIL.ImageFilter import GaussianBlur
+
 class Episode:
     """
     An episode represents a set of evaluations with a set of bees.
@@ -90,7 +94,43 @@ class Episode:
         """
         Check to see if the bees are fatigued. If they are fatigued, return True.
         """
-        pass
+        filename = self.current_path + "fatigue.avi"
+        p = util.record_video (filename, self.config.fatigue_video_number_frames, self.config.fatigue_video_frames_per_second, self.config.crop_left, self.config.crop_right, self.config.crop_top, self.config.crop_bottom)
+        p.wait ()
+        p = util.split_video (filename, self.config.fatigue_video_number_frames, self.config.fatigue_video_frames_per_second, 'tmp/fatigue_%4d.png')
+        p.wait ()
+
+        prev = None
+        first_run = True
+        
+        movement = 0
+
+        for ith_frame in xrange (1, self.config.fatigue_video_number_frames + 1):
+            frame_filename = 'tmp/fatigue_%04d.png' % (ith_frame)
+            if prev == None:
+                prev = Image.open(frame_filename)
+            else:
+                current = Image.open(frame_filename)
+
+                diff = difference(current, prev)
+                blur = diff.filter(GaussianBlur(radius=3))
+                hist = blur.histogram()
+
+                if first_run:
+                    prev.show()
+                    current.show()
+                    diff.show()
+                    blur.show()
+                    first_run = False
+
+                frame_movement = sum(hist[self.config.fatigue_noise_threshold:256])/float(sum(hist))
+                movement += frame_movement
+                print (frame_movement, ' ', end = '')
+
+                prev = current
+        movement = movement / (self.config.fatigue_video_number_frames - 1)
+        print (' => ', movement, self.config.fatigue_threshold)
+        return movement < self.config.fatigue_threshold
 
     def make_background_image (self):
         """
