@@ -44,6 +44,7 @@ class Episode:
         self.current_evaluation_in_episode = 0
         self.episode_index = episode_index
         self.app = PySide.QtGui.QApplication ([])
+        self.index_fatigue = 1
 
     def initialise (self):
         """
@@ -81,6 +82,7 @@ class Episode:
         else:
             print ('  Waiting %d seconds for camera to adjust...' % (self.config.camera_autofocus_time))
             time.sleep (self.config.camera_autofocus_time)
+        self.index_fatigue = 1
 
     def increment_evaluation_counter (self):
         """
@@ -98,7 +100,8 @@ class Episode:
         """
         Check to see if the bees are fatigued. If they are fatigued, return True.
         """
-        filename = self.current_path + "fatigue.avi"
+        filename = self.current_path + "fatigue-%2d.avi" % (self.index_fatigue)
+	self.index_fatigue += 1
         p = util.record_video (filename, self.config.fatigue_video_number_frames, self.config.fatigue_video_frames_per_second, self.config.crop_left, self.config.crop_right, self.config.crop_top, self.config.crop_bottom)
         p.wait ()
         p = util.split_video (filename, self.config.fatigue_video_number_frames, self.config.fatigue_video_frames_per_second, 'tmp/fatigue_%4d.png')
@@ -140,7 +143,8 @@ class Episode:
         """
         Check to see if the bees are fatigued. If they are fatigued, return True.
         """
-        filename = self.current_path + "fatigue.avi"
+        filename = self.current_path + "fatigue-%2d.avi" % (self.index_fatigue)
+	self.index_fatigue += 1
         p = util.record_video (filename, self.config.fatigue_video_number_frames, self.config.fatigue_video_frames_per_second, self.config.crop_left, self.config.crop_right, self.config.crop_top, self.config.crop_bottom)
         p.wait ()
         p = util.split_video (filename, self.config.fatigue_video_number_frames, self.config.fatigue_video_frames_per_second, 'tmp/fatigue_%4d.png')
