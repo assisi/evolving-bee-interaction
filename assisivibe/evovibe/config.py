@@ -185,6 +185,12 @@ class Config (best_config.Config):
                 'Bee fatigue threshold',
                 parse_data = float,
                 path_in_dictionary = ['fatigue']),
+            ParameterIntBounded (
+                'fatigue_gain',
+                '',
+                min_value = 0,
+                max_value = 256,
+                path_in_dictionary = ['fatigue']),
             ])
         if os.path.isfile (filename):
             self.load_from_yaml_file (filename)

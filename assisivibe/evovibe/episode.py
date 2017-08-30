@@ -16,6 +16,10 @@ import PySide.QtGui
 import random
 import time
 
+import PIL
+import PIL.Image
+import PIL.ImageDraw
+import PIL.ImageOps
 from PIL import Image
 from PIL.ImageChops import difference
 from PIL.ImageFilter import GaussianBlur
@@ -82,7 +86,7 @@ class Episode:
         """
         Increment the evaluation counter.  If we have reached the end of an episode, we finish it and start a new episode.
         """
-        if (self.current_evaluation_in_episode == self.config.number_fitness_evaluations_per_episode) or self.check_bee_fatigue():
+        if (self.current_evaluation_in_episode == self.config.number_fitness_evaluations_per_episode) or self.check_bee_fatigue_david():
             self.finish ()
             self.episode_index += 1
             self.initialise ()
@@ -90,7 +94,7 @@ class Episode:
         else:
             self.current_evaluation_in_episode += 1
 
-    def check_bee_fatigue (self):
+    def check_bee_fatigue_david (self):
         """
         Check to see if the bees are fatigued. If they are fatigued, return True.
         """
@@ -121,6 +125,53 @@ class Episode:
                     current.show()
                     diff.show()
                     blur.show()
+                    first_run = False
+
+                frame_movement = sum(hist[self.config.fatigue_noise_threshold:256])/float(sum(hist))
+                movement += frame_movement
+                print (frame_movement, ' ', end = '')
+
+                prev = current
+        movement = movement / (self.config.fatigue_video_number_frames - 1)
+        print (' => ', movement, self.config.fatigue_threshold)
+        return movement < self.config.fatigue_threshold
+
+    def check_bee_fatigue_farshad (self):
+        """
+        Check to see if the bees are fatigued. If they are fatigued, return True.
+        """
+        filename = self.current_path + "fatigue.avi"
+        p = util.record_video (filename, self.config.fatigue_video_number_frames, self.config.fatigue_video_frames_per_second, self.config.crop_left, self.config.crop_right, self.config.crop_top, self.config.crop_bottom)
+        p.wait ()
+        p = util.split_video (filename, self.config.fatigue_video_number_frames, self.config.fatigue_video_frames_per_second, 'tmp/fatigue_%4d.png')
+        p.wait ()
+
+        prev = None
+        first_run = True
+        
+        movement = 0
+
+        w = self.config.image_width
+        h = self.config.image_height
+        for ith_frame in xrange (1, self.config.fatigue_video_number_frames + 1):
+            frame_filename = 'tmp/fatigue_%04d.png' % (ith_frame)
+            if prev == None:
+                prev = Image.open(frame_filename)
+            else:
+                current = Image.open(frame_filename)
+
+                newImage = PIL.Image.new ('L', (w, h), 'white')
+                pixels_prev = prev.load ()
+                pixels_curr = current.load ()
+                pixels_newi = newImage.load ()
+                for x in xrange (w):
+                    for y in xrange (h):
+                        if pixels_prev [x,y][0] > pixels_curr [x,y][0] - self.config.fatigue_gain and pixels_prev [x,y][0] < pixels_curr [x,y][0] + self.config.fatigue_gain:
+                            PIL.ImageDraw.Draw (pixels_newi).rectangle (x, y, x + 1, y + 1, fill = 0)
+
+                if first_run:
+                    pixels_newi.show()
+                    raw_input ('Press INPUT')
                     first_run = False
 
                 frame_movement = sum(hist[self.config.fatigue_noise_threshold:256])/float(sum(hist))
