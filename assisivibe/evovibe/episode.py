@@ -132,7 +132,7 @@ class Episode:
                 print (frame_movement, ' ', end = '')
 
                 prev = current
-        movement = movement / (self.config.fatigue_video_number_frames - 1)
+        movement = movement / (self.config.number_bees * self.config.bee_area_pixels)
         print (' => ', movement, self.config.fatigue_threshold)
         return movement < self.config.fatigue_threshold
 
