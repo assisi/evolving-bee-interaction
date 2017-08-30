@@ -78,13 +78,19 @@ class Episode:
         """
         Increment the evaluation counter.  If we have reached the end of an episode, we finish it and start a new episode.
         """
-        if (self.current_evaluation_in_episode == self.config.number_fitness_evaluations_per_episode):
+        if (self.current_evaluation_in_episode == self.config.number_fitness_evaluations_per_episode) or self.check_bee_fatigue():
             self.finish ()
             self.episode_index += 1
             self.initialise ()
             self.current_evaluation_in_episode = 1
         else:
             self.current_evaluation_in_episode += 1
+
+    def check_bee_fatigue (self):
+        """
+        Check to see if the bees are fatigued. If they are fatigued, return True.
+        """
+        pass
 
     def make_background_image (self):
         """
