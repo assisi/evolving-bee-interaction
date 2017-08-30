@@ -162,6 +162,29 @@ class Config (best_config.Config):
                 min_value = 0,
                 max_value = None,
                 path_in_dictionary = ['video']),
+            ParameterIntBounded (
+                'fatigue_video_number_frames',
+                'Number of frames of the video to check fatigue',
+                min_value = 0,
+                max_value = None,
+                path_in_dictionary = ['fatigue']),
+            ParameterIntBounded (
+                'fatigue_video_frames_per_second',
+                'Frames per second of the video to check fatigue',
+                min_value = 0,
+                max_value = None,
+                path_in_dictionary = ['fatigue']),
+            ParameterIntBounded (
+                'fatigue_noise_threshold',
+                '',
+                min_value = 0,
+                max_value = 256,
+                path_in_dictionary = ['fatigue']),
+            Parameter (
+                'fatigue_threshold',
+                'Bee fatigue threshold',
+                parse_data = float,
+                path_in_dictionary = ['fatigue']),
             ])
         if os.path.isfile (filename):
             self.load_from_yaml_file (filename)
