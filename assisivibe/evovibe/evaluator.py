@@ -11,6 +11,8 @@ import os
 import random
 import sys
 
+import numpy as np
+
 
 from scipy.ndimage import gaussian_filter
 from skimage import io
@@ -21,6 +23,7 @@ from skimage.morphology.grey import opening
 from skimage.morphology.selem import diamond
 from skimage.util.dtype import img_as_float
 from skimage.feature import blob_doh
+from skimage.morphology import square
 
 import assisipy
 
@@ -282,7 +285,7 @@ class Evaluator:
         p = util.split_video (filename, self.config.fatigue_video_number_frames, self.config.fatigue_video_frames_per_second, 'tmp/segment_%4d.png')
         p.wait ()
 
-        background_folder = self.episode.current_path + 'Background.png'
+        background_folder = self.episode.current_path + 'Background.jpg'
         prev = None
         first_run = False
 
@@ -308,11 +311,11 @@ class Evaluator:
             clean = image - dilated
             clean[clean < noise_threshold_lower] = 0.0
             clean[clean > noise_threshold_upper] = 0.0
-            clean = opening(clean)
+            clean = opening(clean, square (3))
 
             # Blob detection
             blobs_doh = blob_dog(clean*255, min_sigma=10, max_sigma=30, threshold=0.1, overlap=0.99)
-            blobs_doh /= np.array (self.config.image_width, self.config.image_height, 1)
+            blobs_doh /= np.ones (shape = (self.config.image_width, self.config.image_height))
 
             std = np.std(blobs_doh, axis=0)
             dispersion = std[0]*std[1]
