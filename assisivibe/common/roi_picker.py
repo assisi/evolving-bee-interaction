@@ -300,7 +300,7 @@ class CircularArenaROIPicker (BaseROIPicker):
         # we have to flip the image horizontally
         draw.ellipse (((cx - r, h - (cy + r) - 1), (cx + r, h - (cy - r) - 1)), fill = (255,0,0,127))
         out = PIL.Image.alpha_composite (base_image, roi_image)
-        out.save (os.path.join (images_folder, 'Region-of-Interests.jpg'))
+        out.save (os.path.join (images_folder, 'Region-of-Interests.png'))
 
     def write_properties (self, images_folder):
         w, h, d = self.imgdata.shape
@@ -386,7 +386,7 @@ class TwoCircularArenasROIPicker (BaseROIPicker):
             # we have to flip the image horizontally
             draw.ellipse (((cx - r, h - (cy + r) - 1), (cx + r, h - (cy - r) - 1)), fill = (fr,fg,fb,127))
         out = PIL.Image.alpha_composite (base_image, roi_image)
-        out.save (os.path.join (images_folder, 'Region-of-Interests.jpg'))
+        out.save (os.path.join (images_folder, 'Region-of-Interests.png'))
 
     def write_properties (self, images_folder):
         w, h, d = self.imgdata.shape

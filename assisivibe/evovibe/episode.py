@@ -24,6 +24,7 @@ from PIL import Image
 from PIL.ImageChops import difference
 from PIL.ImageFilter import GaussianBlur
 
+
 class Episode:
     """
     An episode represents a set of evaluations with a set of bees.

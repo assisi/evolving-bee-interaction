@@ -54,6 +54,7 @@ PRT_FITNESS          = 2
 PRT_CHROMOSOME_GENES = 3
 
 
+
 class Evaluator:
     """
     Class that implements the evaluator used by the inspyred evolutionary algorithm classes.
@@ -85,6 +86,7 @@ class Evaluator:
         self._evaluation_values_reduce = self.EVALUATION_VALUES_REDUCE_FUNCTION ['average']
         # initialise the evaluation image processing function
         self.image_processing_function = image_processing_functions.STRING_2_OBJECT [config.image_processing_function].function
+	self.segment_index = 1
 
     def population_evaluator (self, candidates, args = None):
         """
@@ -277,9 +279,11 @@ class Evaluator:
             fp.close ()
 
 
+
     def segment(self, noise_threshold_upper=0.6, noise_threshold_lower=0.2):
 
-        filename = self.episode.current_path + "segment.avi"
+        filename = self.episode.current_path + "segment-%d.avi" % (self.segment_index)
+        self.segment_index += 1
         p = util.record_video (filename, self.config.fatigue_video_number_frames, self.config.fatigue_video_frames_per_second, self.config.crop_left, self.config.crop_right, self.config.crop_top, self.config.crop_bottom)
         p.wait ()
         p = util.split_video (filename, self.config.fatigue_video_number_frames, self.config.fatigue_video_frames_per_second, 'tmp/segment_%4d.png')
@@ -311,11 +315,11 @@ class Evaluator:
             clean = image - dilated
             clean[clean < noise_threshold_lower] = 0.0
             clean[clean > noise_threshold_upper] = 0.0
-            clean = opening(clean, square (3))
+            clean = opening(clean)
 
             # Blob detection
             blobs_doh = blob_dog(clean*255, min_sigma=10, max_sigma=30, threshold=0.1, overlap=0.99)
-            blobs_doh /= np.ones (shape = (self.config.image_width, self.config.image_height))
+            blobs_doh /= np.array ([self.config.image_width, self.config.image_height, 1])
 
             std = np.std(blobs_doh, axis=0)
             dispersion = std[0]*std[1]

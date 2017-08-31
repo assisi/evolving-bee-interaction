@@ -9,11 +9,12 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
-def evaluate_fatigue(frame_folder, noise_threshold=10):
+def evaluate_fatigue(frame_folder, noise_threshold=10, number_bees = 12, bee_area_pixels = 800):
     prev = None
     first_run = False
 
     movement = []
+    value = 0
 
     for frame in os.listdir(frame_folder):
         if prev == None:
@@ -34,8 +35,15 @@ def evaluate_fatigue(frame_folder, noise_threshold=10):
 
             frame_movement = sum(hist[noise_threshold:256])/float(sum(hist))
             movement.append(frame_movement)
+            value += frame_movement
 
             prev = current
+
+
+    value = value / (number_bees * bee_area_pixels)
+    print(movement)
+    print (value)
+    
 
     # Show movement plot
     fig, ax = plt.subplots(1, 1)
@@ -58,7 +66,6 @@ def evaluate_fatigue(frame_folder, noise_threshold=10):
 
         pl.pause(.01)
 
-    print(movement)
 
 
 if __name__ == '__main__':
